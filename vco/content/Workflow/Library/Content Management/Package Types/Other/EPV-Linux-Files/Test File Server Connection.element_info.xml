@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>Exported from [server]</comment>
+<entry key="categoryPath">Library.Content Management.Package Types.Other.EPV-Linux-Files</entry>
+<entry key="name">Test File Server Connection</entry>
+<entry key="type">Workflow</entry>
+<entry key="id">128ed72a-c0ae-4bd1-8e54-19af8cc2f45c</entry>
+</properties>

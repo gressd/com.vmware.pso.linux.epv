@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd" root-name="item2" object-name="workflow:name=generic" id="128ed72a-c0ae-4bd1-8e54-19af8cc2f45c" version="2.2.3" api-version="6.0.0" allowed-operations="vef" restartMode="1" resumeFromFailedMode="0">
+  <display-name><![CDATA[Test File Server Connection]]></display-name>
+  <position y="50.0" x="100.0"/>
+  <input>
+    <param name="server" type="string"/>
+    <param name="username" type="string"/>
+    <param name="password" type="SecureString"/>
+  </input>
+  <output>
+    <param name="result" type="string"/>
+  </output>
+  <attrib name="password1" type="SecureString" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+    <description><![CDATA[outputting the password]]></description>
+  </attrib>
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="45.40909090909091" x="524.5"/>
+  </workflow-item>
+  <workflow-item name="item1" out-name="item0" type="task">
+    <display-name><![CDATA[Scriptable task]]></display-name>
+    <script encoded="false"><![CDATA[var result = null;
+
+try{
+	var test = System.getModule("com.vmware.cse.utils").executeSSH(server,username,password,"hostname > /dev/null; echo $?");
+	System.debug(test);
+	if (test.indexOf("0") != -1){
+		//var result = "Successfully connected to: " + server;
+		System.log("Successfully connected to: " + server);
+	}
+} catch (e) {
+	var result = "Error: " + e;
+}]]></script>
+    <in-binding>
+      <bind name="server" type="string" export-name="server"/>
+      <bind name="username" type="string" export-name="username"/>
+      <bind name="password" type="SecureString" export-name="password"/>
+    </in-binding>
+    <out-binding>
+      <bind name="result" type="string" export-name="result"/>
+    </out-binding>
+    <position y="55.40909090909091" x="344.5"/>
+  </workflow-item>
+  <workflow-item name="item2" out-name="item1" type="link" linked-workflow-id="371a794d-e6eb-40eb-947e-57a0bfe9db1c">
+    <display-name><![CDATA[EPV - Retrieve Password with AIM and PS]]></display-name>
+    <in-binding>
+      <bind name="address" type="string" export-name="server">
+        <description><![CDATA[The address (FQDN) of the system that has the credentials]]></description>
+      </bind>
+      <bind name="username" type="string" export-name="username">
+        <description><![CDATA[The username of the account to retrieve]]></description>
+      </bind>
+    </in-binding>
+    <out-binding>
+      <bind name="password" type="SecureString" export-name="password1">
+        <description><![CDATA[outputting the password]]></description>
+      </bind>
+    </out-binding>
+    <description><![CDATA[Copyright 2017, VMware, Inc. All Rights Reserved.
+
+Workflow to retrieve passwords from CyberArk EPV using AIM installed on a PS host.]]></description>
+    <position y="55.40909090909091" x="204.5"/>
+  </workflow-item>
+  <presentation>
+    <p-param name="server">
+      <desc><![CDATA[server]]></desc>
+    </p-param>
+    <p-param name="username">
+      <desc><![CDATA[username]]></desc>
+    </p-param>
+    <p-param name="password">
+      <desc><![CDATA[password]]></desc>
+    </p-param>
+  </presentation>
+</workflow>

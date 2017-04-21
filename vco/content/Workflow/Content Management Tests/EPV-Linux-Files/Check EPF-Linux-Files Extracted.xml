@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd" root-name="item1" object-name="workflow:name=generic" id="2bbc893c-8beb-4192-afc1-5cd3b6b6b693" version="2.1.5" api-version="6.0.0" allowed-operations="vef" restartMode="1" resumeFromFailedMode="0">
+  <display-name><![CDATA[Check EPF-Linux-Files Extracted]]></display-name>
+  <position y="50.0" x="100.0"/>
+  <input>
+    <param name="endpointServer" type="string"/>
+    <param name="endpointPassword" type="SecureString"/>
+    <param name="endpointUser" type="string"/>
+    <param name="packageName" type="string"/>
+  </input>
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="45.40909090909091" x="404.5"/>
+  </workflow-item>
+  <workflow-item name="item1" out-name="item0" type="task">
+    <display-name><![CDATA[Test Files Exist]]></display-name>
+    <script encoded="false"><![CDATA[System.debug("endpointServer: " + endpointServer);
+System.debug("endpointUser: " + endpointUser);
+System.debug("packageName: " + packageName);
+//System.debug("artifactUrls: " + artifactUrls);
+if (!endpointServer || !endpointUser){
+	throw "Required field is null. Required: endpointServer, endpointUser, artifactUrls";
+}
+
+//Make temp directory and set temp file path
+//var tempDir = "/tmp/clm/"
+//System.getModule("com.vmware.cse.utils").executeSSH(endpointServer,endpointUser,endpointPassword,"mkdir -p " + tempDir);
+//var tempFile = tempDir + "test-" + System.nextUUID() + ".tar.gz";
+/*
+//Get tar.gz url from artifactUrls
+var urls = artifactUrls.split(",");
+var artifactUrl;
+for each (var url in urls){
+	if (url.indexOf(".tar.gz") != -1){
+		System.debug("Found content url: " + url);
+		artifactUrl = url;
+		break;
+	}
+}
+
+//Download tar file to temp file location
+System.debug("Downloading to: " + tempFile);
+var cmd = "curl -k -s "+artifactUrl+" -o " + tempFile + " > /dev/null; echo $?";
+System.debug("Running command: " + cmd);
+var result = System.getModule("com.vmware.cse.utils").executeSSH(endpointServer,endpointUser,endpointPassword,cmd);
+System.debug("Result (0 = success): " + result);
+
+//Check tar file downloaded successfully
+var tarExists = checkFileExists(tempFile,endpointServer,endpointUser,endpointPassword);
+if (!tarExists){
+	throw "Error: Failed to download file from: " + artifactUrl + " to " + tempFile;
+}
+
+//List contents of tar file without extracting
+var cmd = "tar -ztf " + tempFile;
+System.debug("Checking contents of tar file: " + cmd);
+var contents = System.getModule("com.vmware.cse.utils").executeSSH(endpointServer,endpointUser,endpointPassword,cmd);
+System.debug("contents:\n" + contents);
+
+//Turn list into array of string
+var out = contents.replace(/\s+/g,' ');
+var files = [];
+for each (var str in out.split(" ")){
+	if (str){
+		files.push("/" + str);
+	}
+}
+
+//For each file verify it exists on the file system
+for each (var file in files){
+	var exists = checkFileExists(file,endpointServer,endpointUser,endpointPassword);
+	if (!exists){
+		throw "Error: File "+file+" contained in tar.gz was not found on test endpoint after extraction"
+	}
+}
+
+//Remove the temp file
+System.getModule("com.vmware.cse.utils").executeSSH(endpointServer,endpointUser,endpointPassword,"rm -rf " + tempFile);
+
+
+//// Functions below ////
+function checkFileExists(path,server,user,password) {
+	System.debug("Checking if file: " + path + " exists on server " + server);
+	try{
+		System.getModule("com.vmware.cse.utils").executeSSH(server,user,password,"ls " + path);
+		return true;
+	} catch (e) {
+		try{
+			System.sleep(500);
+			System.getModule("com.vmware.cse.utils").executeSSH(server,user,password,"ls " + path);
+			return true;
+		} catch (e) {
+			return false;
+		}
+		return false;
+	}
+}
+*/
+]]></script>
+    <in-binding>
+      <bind name="endpointPassword" type="SecureString" export-name="endpointPassword"/>
+      <bind name="endpointServer" type="string" export-name="endpointServer"/>
+      <bind name="endpointUser" type="string" export-name="endpointUser"/>
+      <bind name="packageName" type="string" export-name="packageName"/>
+    </in-binding>
+    <out-binding/>
+    <position y="55.40909090909091" x="184.5"/>
+  </workflow-item>
+  <presentation>
+    <p-param name="endpointServer">
+      <desc><![CDATA[endpointServer]]></desc>
+    </p-param>
+    <p-param name="endpointPassword">
+      <desc><![CDATA[endpointPassword]]></desc>
+    </p-param>
+    <p-param name="endpointUser">
+      <desc><![CDATA[endpointUser]]></desc>
+    </p-param>
+    <p-param name="packageName">
+      <desc><![CDATA[packageName]]></desc>
+    </p-param>
+  </presentation>
+</workflow>

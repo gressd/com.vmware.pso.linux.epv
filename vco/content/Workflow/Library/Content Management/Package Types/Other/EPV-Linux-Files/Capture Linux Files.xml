@@ -1,0 +1,170 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<workflow xmlns="http://vmware.com/vco/workflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://vmware.com/vco/workflow http://vmware.com/vco/workflow/Workflow-v4.xsd" root-name="item4" object-name="workflow:name=generic" id="498a6a26-cbbd-4f21-81ac-77d50694987f" version="2.2.6" api-version="6.0.0" allowed-operations="vef" restartMode="1" resumeFromFailedMode="0">
+  <display-name><![CDATA[Capture Linux Files]]></display-name>
+  <position y="27.227272727272727" x="185.0"/>
+  <input>
+    <param name="exportDir" type="string"/>
+    <param name="packageName" type="string"/>
+    <param name="sourceConfig" type="string"/>
+    <param name="packageType" type="string"/>
+  </input>
+  <attrib name="contentFilename" type="string" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <attrib name="contentSubfolder" type="string" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <attrib name="password" type="SecureString" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <attrib name="username" type="string" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <attrib name="server" type="string" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <attrib name="remoteExportFolder" type="string" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <attrib name="isWindows" type="boolean" read-only="false">
+    <value encoded="n"><![CDATA[false]]></value>
+  </attrib>
+  <attrib name="remoteFile" type="string" read-only="false">
+    <value encoded="n"><![CDATA[]]></value>
+  </attrib>
+  <workflow-item name="item4" out-name="item1" type="task">
+    <display-name><![CDATA[Initialize]]></display-name>
+    <script encoded="false"><![CDATA[var server = System.getModule("com.vmware.cse.clm.configs").getValueFromResourceConfig(sourceConfig,"server");
+System.debug("Initializing capture from remote server: " + server);
+var username = System.getModule("com.vmware.cse.clm.configs").getValueFromResourceConfig(sourceConfig,"user");
+System.log('user:' +username);
+var password = System.getModule("com.vmware.cse.clm.configs").getValueFromResourceConfig(sourceConfig,"password");
+var remoteExportFolder = System.getModule("com.vmware.cse.utils").fixDirectoryPath(System.getModule("com.vmware.cse.clm.configs").getValueFromResourceConfig(sourceConfig,"tempPath"));
+System.log("remoteExportFolder:config:" +remoteExportFolder);
+if (remoteExportFolder){
+	System.debug("Got tempPath from content endpoint configuration: " + remoteExportFolder);
+} else {
+	remoteExportFolder = "/tmp/clm/";
+}
+System.log("ref:" +remoteExportFolder);
+var contentFilename = System.getModule("com.vmware.cse.clm.configs").getValueFromPackageTypeConfig(packageType,"contentFilename");
+System.log("Got contentFilename from content endpoint: " + contentFilename);
+var format = contentFilename.replace(contentFilename.split(".")[0],"");
+if (format != ".tar.gz"){
+	throw ("Unsupported file type configured in package type configuration: " + format);
+}
+
+var basePaths = System.getModule("com.vmware.cse.clm.configs").getValueFromResourceConfig(sourceConfig,"basePaths");
+if (!basePaths || basePaths.indexOf(":") != -1){
+	throw "Unsupported file path in package type configuration" 
+}
+System.log("basePaths:" +basePaths);
+
+]]></script>
+    <in-binding>
+      <bind name="sourceConfig" type="string" export-name="sourceConfig"/>
+      <bind name="packageType" type="string" export-name="packageType"/>
+    </in-binding>
+    <out-binding>
+      <bind name="server" type="string" export-name="server"/>
+      <bind name="username" type="string" export-name="username"/>
+      <bind name="password" type="SecureString" export-name="password"/>
+      <bind name="remoteExportFolder" type="string" export-name="remoteExportFolder"/>
+      <bind name="contentFilename" type="string" export-name="contentFilename"/>
+      <bind name="contentSubfolder" type="string" export-name="contentSubfolder"/>
+      <bind name="isWindows" type="boolean" export-name="isWindows"/>
+    </out-binding>
+    <position y="37.22727272727273" x="284.5"/>
+  </workflow-item>
+  <workflow-item name="item5" out-name="item0" type="task">
+    <display-name><![CDATA[Capture]]></display-name>
+    <script encoded="false"><![CDATA[var cmd = "mkdir -p " + remoteExportFolder; 
+System.debug("Creating export directory on remote server: " + cmd)
+System.getModule("com.vmware.cse.utils").executeSSH(server,username,password,cmd);
+
+var remoteFile = remoteExportFolder + contentFilename;
+System.debug("remoteFile: " + remoteFile);
+var cmd = "(tar cvzf  "+ remoteFile + " -C / " + packageName.substring(1) + ")"; 
+System.debug("Creating tar.gz file on remote server: " + cmd)
+System.getModule("com.vmware.cse.utils").executeSSH(server,username,password,cmd);
+System.getModule("com.vmware.cse.clm.utils").exchangeSSHkeys(server,username,password);
+var exportFilePath = exportDir + contentFilename;
+var cmd = "mkdir -p " + exportDir;
+System.log("Creating export directory on transfer server: " + cmd)
+System.getModule("com.vmware.cse.clm.utils").executeSSH(cmd);
+var cmd = "scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q " + username + "@" +  server + ":" + remoteFile + " " + exportFilePath + "; echo $?";
+System.debug("Copying tar.gz file to transfer server via scp: " + cmd)
+var result = System.getModule("com.vmware.cse.clm.utils").executeSSH(cmd);
+System.debug("Result (0 = success): " + result);
+
+if (!System.getModule("com.vmware.cse.clm.configs").getValueFromGlobalConfig("debugMode")){
+	if (remoteFile != "/"){
+		var cmd = "rm -rf "+ remoteFile; 
+		System.debug("Deleting exported tar.gz file on remote server: " + cmd)
+		System.getModule("com.vmware.cse.utils").executeSSH(server,username,password,cmd);
+	}
+}
+var exists = System.getModule("com.vmware.cse.clm.utils").fileExistsSSH(exportFilePath);
+if (!exists){
+	throw ("Failed to export tar.gz file");
+} else {
+	System.debug("Successfully captured tar.gz file from SSH host");
+}
+
+
+
+
+
+]]></script>
+    <in-binding>
+      <bind name="packageName" type="string" export-name="packageName"/>
+      <bind name="remoteExportFolder" type="string" export-name="remoteExportFolder"/>
+      <bind name="contentFilename" type="string" export-name="contentFilename"/>
+      <bind name="password" type="SecureString" export-name="password"/>
+      <bind name="username" type="string" export-name="username"/>
+      <bind name="server" type="string" export-name="server"/>
+      <bind name="exportDir" type="string" export-name="exportDir"/>
+    </in-binding>
+    <out-binding>
+      <bind name="remoteFile" type="string" export-name="remoteFile"/>
+    </out-binding>
+    <position y="37.22727272727273" x="564.5"/>
+  </workflow-item>
+  <workflow-item name="item0" type="end" end-mode="0">
+    <position y="27.227272727272727" x="764.5"/>
+  </workflow-item>
+  <workflow-item name="item1" out-name="item5" type="link" linked-workflow-id="371a794d-e6eb-40eb-947e-57a0bfe9db1c">
+    <display-name><![CDATA[EPV - Retrieve Password with AIM and PS]]></display-name>
+    <in-binding>
+      <bind name="address" type="string" export-name="server">
+        <description><![CDATA[The address (FQDN) of the system that has the credentials]]></description>
+      </bind>
+      <bind name="username" type="string" export-name="username">
+        <description><![CDATA[The username of the account to retrieve]]></description>
+      </bind>
+    </in-binding>
+    <out-binding>
+      <bind name="password" type="SecureString" export-name="password">
+        <description><![CDATA[outputting the password]]></description>
+      </bind>
+    </out-binding>
+    <description><![CDATA[Copyright 2017, VMware, Inc. All Rights Reserved.
+
+Workflow to retrieve passwords from CyberArk EPV using AIM installed on a PS host.]]></description>
+    <position y="37.22727272727273" x="424.5"/>
+  </workflow-item>
+  <presentation>
+    <p-param name="exportDir">
+      <desc><![CDATA[exportDir]]></desc>
+    </p-param>
+    <p-param name="packageName">
+      <desc><![CDATA[packageName]]></desc>
+    </p-param>
+    <p-param name="sourceConfig">
+      <desc><![CDATA[sourceConfigName]]></desc>
+    </p-param>
+    <p-param name="packageType">
+      <desc><![CDATA[packageType]]></desc>
+    </p-param>
+  </presentation>
+</workflow>
